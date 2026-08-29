@@ -42,7 +42,7 @@ The dashboard includes:
 
 ## Dataset
 
-This project uses the column reference of **Global Terrorism Database (GTD)**[https://www.kaggle.com/datasets/START-UMD/gtd?select=globalterrorismdb_0718dist.csv].
+This project uses the column reference of **Global Terrorism Database (GTD)** ["https://www.kaggle.com/datasets/START-UMD/gtd?select=globalterrorismdb_0718dist.csv"].
 
 The dataset is **not included** in this repository due to its size.
 Dataset need to be uploaded and columns of uploaded dataset must be mapped with the internal preset columns before training the data.
