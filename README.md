@@ -1,6 +1,6 @@
 # AI-Based Military Intelligence Dashboard
 
-An interactive AI-powered military intelligence dashboard built with **Streamlit**, **Machine Learning**, and the **Global Terrorism Database (GTD)**. The application enables users to explore global terrorism incidents, analyze trends, predict attack types, forecast future incidents, and generate intelligence reports through a modern analytical interface.
+An interactive AI-powered military intelligence dashboard built with **Streamlit**, **Machine Learning**. The application enables users to explore global terrorism incidents, analyze trends, predict attack types, forecast future incidents, and generate intelligence reports through a modern analytical interface.
 
 ---
 
@@ -42,9 +42,10 @@ The dashboard includes:
 
 ## Dataset
 
-This project uses the **Global Terrorism Database (GTD)**.
+This project uses the column reference of **Global Terrorism Database (GTD)**[https://www.kaggle.com/datasets/START-UMD/gtd?select=globalterrorismdb_0718dist.csv].
 
 The dataset is **not included** in this repository due to its size.
+Dataset need to be uploaded and columns of uploaded dataset must be mapped with the internal preset columns before training the data.
 
 Download it from the official GTD website and place it inside:
 
@@ -55,7 +56,7 @@ data/
 Expected file:
 
 ```
-data/globalterrorism.csv
+data/globalterrorism.csv --> or user can choose any file
 ```
 
 ---
@@ -63,26 +64,42 @@ data/globalterrorism.csv
 ## Project Structure
 
 ```
-AI-Military-Intelligence-Dashboard
+Military_Intelligence_Dashboard/
 │
-├── app.py
-├── pages/
-│   ├── Home.py
-│   ├── Global_Threat_Map.py
-│   ├── Country_Analysis.py
-│   ├── Attack_Prediction.py
-│   ├── Threat_Level_Prediction.py
-│   ├── Forecasting.py
-│   ├── AI_Intelligence_Report.py
-│   ├── Data_Explorer.py
-│   └── Settings.py
-│
-├── utils/
-├── assets/
-├── .streamlit/
-├── requirements.txt
 ├── .gitignore
-└── README.md
+├── README.md
+├── Main.py
+│
+├── assets/
+│   └── style.css
+│
+├── data/
+│   └── custom_dataset.csv
+│
+├── models/
+│   └── custom/
+│       ├── attack_prediction_label_encoder.joblib
+│       ├── attack_prediction_metadata.json
+│       ├── attack_prediction_model.joblib
+│       ├── threat_level_metadata.json
+│       └── threat_level_model.joblib
+│
+├── pages/
+│   ├── Attack_prediction.py
+│   ├── Country_analysis.py
+│   ├── Data_explorer.py
+│   ├── Forecasting.py
+│   ├── Global_threat_map.py
+│   ├── Home.py
+│   ├── Intelligence_report.py
+│   ├── Settings.py
+│   └── Threat_level_prediction.py
+│
+└── utils/
+    ├── data_loader.py
+    ├── data_mapper.py
+    ├── model_trainer.py
+    └── ui.py
 ```
 
 ---
@@ -144,23 +161,23 @@ Before running the project, place the following files in the appropriate folders
 ### Dataset
 
 ```
-data/globalterrorism.csv
+data/[user's .csv file]
 ```
 
 ### Trained Models
 
 ```
 models/
-├── attack_prediction_model.pkl
-├── feature_encoders.pkl
-├── target_encoder.pkl
+    ├── attack_prediction_label_encoder.joblib
+    ├── attack_prediction_metadata.json
+    ├── attack_prediction_model.joblib
+    ├── threat_level_metadata.json
+    └── threat_level_model.joblib
 ```
-
-These files are excluded from the repository using `.gitignore`.
 
 ---
 
-## 📷 Dashboard Modules
+## Dashboard Modules
 
 - Home Dashboard
 - Global Threat Map
@@ -168,7 +185,7 @@ These files are excluded from the repository using `.gitignore`.
 - Attack Prediction
 - Threat Level Prediction
 - Forecasting
-- AI Intelligence Report
+- Intelligence Report
 - Data Explorer
 - Settings
 
@@ -200,4 +217,4 @@ The Global Terrorism Database (GTD) is maintained by the National Consortium for
 
 Computer Science & Engineering Student
 
-AI • Machine Learning • Data Analytics • Full Stack Development
+AI • Machine Learning • Data Analytics 

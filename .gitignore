@@ -1,7 +1,9 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *.pyo
+*.pyd
 
 # Virtual Environment
 .venv/
@@ -32,3 +34,17 @@ data/*.csv
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Dataset files
+*.csv
+*.xlsx
+*.xls
+
+# Cache
+.cache/
+
+# Generated reports
+reports/
+
+# Temporary
+*.tmp
