@@ -56,7 +56,7 @@ data/
 Expected file:
 
 ```
-data/globalterrorism.csv --> or user can choose any file
+data/globalterrorismdb_0718dist --> or user can choose any csv file
 ```
 
 ---
