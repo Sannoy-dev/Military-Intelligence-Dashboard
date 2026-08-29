@@ -1,198 +1,924 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import joblib
-
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import RandomForestClassifier
+import traceback
 from utils.ui import load_css
-# -------------------------------
-# Page Config
-# -------------------------------
+from utils.data_loader import load_data
+from utils.model_trainer import (
+    load_threat_model,
+    threat_model_exists,
+    predict_threat,
+    load_threat_metadata,
+    THREAT_FEATURE_COLUMNS,
+)
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
 st.set_page_config(
     page_title="Threat Level Prediction",
-    page_icon="🚨",
     layout="wide"
 )
+
 load_css()
-st.markdown("""
-<div class="page-header">
 
-<h1>🚨 AI Threat Level Prediction</h1>
+# ============================================================
+# HEADER
+# ============================================================
 
-<p>
-Estimate the operational threat level of a terrorism incident
-using machine learning trained on the Global Terrorism Database.
-</p>
+st.markdown(
+    """
 
-</div>
-""", unsafe_allow_html=True)
+    <div>
+        <h1>AI Threat Level Prediction</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# -------------------------------
-# Load Dataset
-# -------------------------------
-@st.cache_data
-def load_data():
-    return pd.read_csv(
-        "data/globalterrorism.csv",
-        encoding="latin1",
-        low_memory=False
+# ============================================================
+# ARCHITECTURE NOTICE
+# ============================================================
+
+st.info(
+    """
+    **Local Model Architecture**
+
+    This module uses only the Threat Level model trained from
+    the currently active uploaded dataset.
+
+    No default or pre-trained threat model is used.
+    """
+)
+
+# ============================================================
+# CHECK ACTIVE DATASET
+# ============================================================
+
+try:
+
+    with st.spinner("Loading active intelligence dataset..."):
+        df = load_data()
+
+except Exception as error:
+
+    st.error(
+        f"Unable to load the active dataset: {error}"
     )
 
-with st.spinner("Loading intelligence database..."):
-    df = load_data()
+    st.stop()
 
-df = df[[
-    "country_txt",
-    "region_txt",
-    "attacktype1_txt",
-    "weaptype1_txt",
-    "targtype1_txt",
-    "nkill",
-    "nwound"
-]]
+if df is None:
+    st.error("No dataset loaded.")
+    st.stop()
 
-df = df.dropna()
+if df.empty:
+    st.warning("Dataset is empty.")
+    st.stop()
+# ============================================================
+# NO DATASET
+# ============================================================
 
-# -------------------------------
-# Create Threat Level
-# -------------------------------
-df["impact"] = df["nkill"] + df["nwound"]
+if df is None or df.empty:
 
-def classify_threat(x):
-    if x <= 2:
-        return "LOW"
-    elif x <= 10:
-        return "MEDIUM"
+    st.warning(
+        """
+        No active dataset is available.
+
+        Upload and process a compatible CSV dataset from the
+        main dashboard before using Threat Level Prediction.
+        """
+    )
+
+    st.stop()
+
+# ============================================================
+# DATASET INFORMATION
+# ============================================================
+
+st.markdown("Active Dataset")
+
+c1, c2, c3 = st.columns(3)
+
+with c1:
+
+    st.metric(
+        "Records",
+        f"{len(df):,}"
+    )
+
+with c2:
+
+    st.metric(
+        "Columns",
+        len(df.columns)
+    )
+
+with c3:
+
+    st.metric(
+        "Threat Model",
+        "Available"
+        if threat_model_exists()
+        else "Not Trained"
+    )
+
+# ============================================================
+# REQUIRED DATASET FEATURES
+# ============================================================
+
+missing_features = [
+    column
+    for column in THREAT_FEATURE_COLUMNS
+    if column not in df.columns
+]
+
+if missing_features:
+
+    st.error(
+        "This dataset cannot currently support Threat Level "
+        "Prediction."
+    )
+
+    st.markdown("Missing Training Features")
+
+    st.code(
+        "\n".join(missing_features),unsafe_allow_html=True
+    )
+
+    st.info(
+        """
+        Return to the main dashboard and make sure the uploaded
+        dataset has been mapped to the required standard fields.
+
+        Threat Level Prediction requires:
+
+        - Country
+        - Region
+        - Attack Type
+        - Weapon Type
+        - Target Type
+        - Fatalities
+        - Injuries
+        """
+    )
+
+    st.stop()
+
+# ============================================================
+# MODEL STATUS
+# ============================================================
+
+if not threat_model_exists():
+
+    st.warning(
+        """
+        **Threat Level Prediction model has not been trained.**
+
+        The active dataset contains the required fields, but a
+        locally trained Threat Level model is not currently
+        available.
+
+        Go to the main dashboard and use:
+
+        **Train Models Locally**
+        """
+    )
+
+    st.markdown("Required Workflow")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+
+        st.markdown(
+            """
+            <div class="chart-card">
+
+                <h3>1. Upload Dataset</h3>
+
+                <p>
+                    Upload your CSV intelligence dataset from
+                    the main dashboard.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with c2:
+
+        st.markdown(
+            """
+            <div class="chart-card">
+
+                <h3>2. Map Columns</h3>
+
+                <p>
+                    Map uploaded columns to the standardized
+                    application fields.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with c3:
+
+        st.markdown(
+            """
+            <div class="chart-card">
+
+                <h3>3. Train Locally</h3>
+
+                <p>
+                    Train the Threat Level model using the
+                    active dataset.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.stop()
+
+# ============================================================
+# LOAD THREAT MODEL
+# ============================================================
+
+try:
+    with st.spinner(
+        "Loading trained model..."
+    ):
+
+     model_data = model = load_threat_model()
+
+except Exception as error:
+
+    st.error(
+        f"Unable to load the Threat Level model: {error}"
+    )
+
+    st.stop()
+
+# ============================================================
+# INVALID / CORRUPTED MODEL
+# ============================================================
+
+if model_data is None:
+
+    st.error(
+        """
+        The Threat Level model files are incomplete,
+        unavailable, or corrupted.
+
+        Retrain the Threat Level model from the main dashboard.
+        """
+    )
+
+    st.stop()
+
+# ============================================================
+# MODEL METADATA
+# ============================================================
+
+metadata = load_threat_metadata()
+
+st.success(
+    "🟢 Locally trained Threat Level model is active."
+)
+
+# ============================================================
+# MODEL INFORMATION
+# ============================================================
+
+st.markdown("Model Information")
+
+m1, m2, m3, m4 = st.columns(4)
+
+with m1:
+
+    st.metric(
+        "Model",
+        "Random Forest"
+    )
+
+with m2:
+
+    if metadata:
+
+        st.metric(
+            "Training Records",
+            f"{metadata.get('training_records', 0):,}"
+        )
+
     else:
-        return "HIGH"
 
-df["threat_level"] = df["impact"].apply(classify_threat)
+        st.metric(
+            "Training Records",
+            "N/A"
+        )
 
-# -------------------------------
-# Encode Categorical Data
-# -------------------------------
-encoders = {}
+with m3:
 
-for col in [
+    if metadata:
+
+        accuracy = metadata.get(
+            "accuracy"
+        )
+
+        if accuracy is not None:
+
+            st.metric(
+                "Test Accuracy",
+                f"{accuracy * 100:.2f}%"
+            )
+
+        else:
+
+            st.metric(
+                "Test Accuracy",
+                "N/A"
+            )
+
+    else:
+
+        st.metric(
+            "Test Accuracy",
+            "N/A"
+        )
+
+with m4:
+
+    if metadata:
+
+        st.metric(
+            "Classes",
+            metadata.get(
+                "number_of_classes",
+                "N/A"
+            )
+        )
+
+    else:
+
+        st.metric(
+            "Classes",
+            "N/A"
+        )
+
+# ============================================================
+# PREPARE DISPLAY DATA
+# ============================================================
+
+display_df = df.copy()
+
+categorical_columns = [
     "country_txt",
     "region_txt",
     "attacktype1_txt",
     "weaptype1_txt",
     "targtype1_txt"
+]
+
+for column in categorical_columns:
+
+    display_df[column] = (
+        display_df[column]
+        .fillna("Unknown")
+        .astype(str)
+        .str.strip()
+    )
+
+# ------------------------------------------------------------
+# Numeric fields
+# ------------------------------------------------------------
+
+for column in [
+    "nkill",
+    "nwound"
 ]:
-    le = LabelEncoder()
-    df[col] = le.fit_transform(df[col])
-    encoders[col] = le
 
-# Encode target
-target_encoder = LabelEncoder()
-df["threat_level"] = target_encoder.fit_transform(df["threat_level"])
+    display_df[column] = pd.to_numeric(
+        display_df[column],
+        errors="coerce"
+    ).fillna(0)
 
-# -------------------------------
-# Train Model
-# -------------------------------
+# ============================================================
+# INCIDENT PARAMETERS
+# ============================================================
 
-X = df.drop(columns=["threat_level", "impact"])
-y = df["threat_level"]
+st.markdown("Incident Parameters")
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
-    test_size=0.2,
-    random_state=42
+st.caption(
+    """
+    Provide the known characteristics of an incident to
+    generate a Threat Level classification.
+    """
 )
 
-model = RandomForestClassifier(
-    n_estimators=200,
-    random_state=42
-)
-
-model.fit(X_train, y_train)
-
-# -------------------------------
-# Sidebar Inputs
-# -------------------------------
-st.sidebar.header("Input Parameters")
-
-country = st.sidebar.selectbox("Country", df["country_txt"].unique())
-region = st.sidebar.selectbox("Region", df["region_txt"].unique())
-attack = st.sidebar.selectbox("Attack Type", df["attacktype1_txt"].unique())
-weapon = st.sidebar.selectbox("Weapon Type", df["weaptype1_txt"].unique())
-target = st.sidebar.selectbox("Target Type", df["targtype1_txt"].unique())
-
-nkill = st.sidebar.number_input("Number Killed", 0, 1000, 0)
-nwound = st.sidebar.number_input("Number Wounded", 0, 1000, 0)
-
-# -------------------------------
-# Prediction Button
-# -------------------------------
-if st.button(
-    "🚨 Predict Threat Level",
-    use_container_width=True
+with st.form(
+    "threat_prediction_form"
 ):
 
-    with st.spinner("Running AI threat assessment..."):
+    left, right = st.columns(2)
 
-    # Encode inputs
-     input_data = np.array([[
-        country,
-        region,
-        attack,
-        weapon,
-        target,
-        nkill,
-        nwound
-    ]])
+    # ========================================================
+    # LEFT COLUMN
+    # ========================================================
 
-    prediction = model.predict(input_data)
-    probability = model.predict_proba(input_data)
+    with left:
 
-    result = target_encoder.inverse_transform(prediction)[0]
-    confidence = np.max(probability) * 100
+        country_options = sorted(
+            display_df[
+                "country_txt"
+            ].dropna().unique().tolist()
+        )
 
-    # -------------------------------
-    # Output
-    # -------------------------------
-    st.markdown("## 🧠 AI Threat Assessment")
-    if result == "LOW":
-        st.success("""
-### 🟢 LOW THREAT
+        region_options = sorted(
+            display_df[
+                "region_txt"
+            ].dropna().unique().tolist()
+        )
 
-Minimal operational impact detected.
+        attack_options = sorted(
+            display_df[
+                "attacktype1_txt"
+            ].dropna().unique().tolist()
+        )
 
-Routine monitoring is recommended.
-""")
-    elif result == "MEDIUM":
-        st.warning("""
-### 🟡 MEDIUM THREAT
+        country = st.selectbox(
+            "Country",
+            country_options
+        )
 
-Moderate operational impact detected.
+        region = st.selectbox(
+            "Region",
+            region_options
+        )
 
-Enhanced surveillance is recommended.
-""")
+        attack = st.selectbox(
+            "Attack Type",
+            attack_options
+        )
+
+    # ========================================================
+    # RIGHT COLUMN
+    # ========================================================
+
+    with right:
+
+        weapon_options = sorted(
+            display_df[
+                "weaptype1_txt"
+            ].dropna().unique().tolist()
+        )
+
+        target_options = sorted(
+            display_df[
+                "targtype1_txt"
+            ].dropna().unique().tolist()
+        )
+
+        weapon = st.selectbox(
+            "Weapon Type",
+            weapon_options
+        )
+
+        target = st.selectbox(
+            "Target Type",
+            target_options
+        )
+
+        nkill = st.number_input(
+            "Fatalities",
+            min_value=0,
+            max_value=100000,
+            value=0,
+            step=1
+        )
+
+        nwound = st.number_input(
+            "Injuries",
+            min_value=0,
+            max_value=100000,
+            value=0,
+            step=1
+        )
+
+    st.markdown(
+        "<br>",
+        unsafe_allow_html=True
+    )
+
+    predict_button = st.form_submit_button(
+        "Generate Threat Assessment",
+        use_container_width=True
+    )
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+if predict_button:
+
+    input_data = {
+
+        "country_txt":
+            country,
+
+        "region_txt":
+            region,
+
+        "attacktype1_txt":
+            attack,
+
+        "weaptype1_txt":
+            weapon,
+
+        "targtype1_txt":
+            target,
+
+        "nkill":
+            nkill,
+
+        "nwound":
+            nwound
+    }
+
+    try:
+
+        with st.spinner(
+            "Running AI threat assessment..."
+        ):
+
+            result = predict_threat(
+                          model,
+                        input_data
+                          )
+
+    except Exception as error:
+
+        st.error(
+            f"Threat assessment failed: {error}"
+        )
+
+        st.stop()
+
+    # ========================================================
+    # RESULT DATA
+    # ========================================================
+
+    threat_level = result.get(
+        "prediction",
+        "UNKNOWN"
+    )
+
+    confidence = result.get(
+        "confidence"
+    )
+
+    probabilities = result.get(
+        "probabilities"
+    )
+
+    # ========================================================
+    # RESULT HEADER
+    # ========================================================
+
+    st.markdown(
+        "<div class='result-divider'></div>",
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="report-card">
+
+            <div class="report-label">
+                AI THREAT ASSESSMENT
+            </div>
+
+            <h2>Prediction Result</h2>
+
+            <p>
+                The locally trained machine-learning model has
+                completed the threat-level classification.
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ========================================================
+    # THREAT CLASSIFICATION
+    # ========================================================
+
+    if threat_level == "LOW":
+
+        threat_class = "low"
+
+        threat_title = "🟢 LOW THREAT"
+
+        threat_description = (
+            "The model classified the incident as a "
+            "relatively low-impact threat level."
+        )
+
+    elif threat_level == "MEDIUM":
+
+        threat_class = "medium"
+
+        threat_title = "🟡 MEDIUM THREAT"
+
+        threat_description = (
+            "The model classified the incident as a "
+            "moderate-impact threat level."
+        )
+
+    elif threat_level == "HIGH":
+
+        threat_class = "high"
+
+        threat_title = "🔴 HIGH THREAT"
+
+        threat_description = (
+            "The model classified the incident as a "
+            "high-impact threat level."
+        )
+
     else:
-        st.error("""
-### 🔴 HIGH THREAT
 
-High operational impact detected.
+        threat_class = "medium"
 
-Immediate response and intelligence coordination
-are recommended.
-""")
+        threat_title = "⚪ UNKNOWN THREAT"
 
-    st.metric("Confidence Score", f"{confidence:.2f}%")
+        threat_description = (
+            "The model returned an unrecognized threat "
+            "classification."
+        )
 
-    st.write("### Probability Distribution")
-    prob_df = pd.DataFrame({
-    "Threat Level": target_encoder.classes_,
-    "Probability": probability[0]
-})
+    # ========================================================
+    # THREAT CARD
+    # ========================================================
 
-st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="threat-result {threat_class}">
 
-st.bar_chart(
-    prob_df.set_index("Threat Level")
+            <div class="threat-title">
+                {threat_title}
+            </div>
+
+            <div class="threat-description">
+                {threat_description}
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # ========================================================
+    # ASSESSMENT METRICS
+    # ========================================================
+
+    st.markdown(
+        "### Assessment Metrics"
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric(
+        "Threat Level",
+        threat_level
+    )
+
+    if confidence is not None:
+
+        c2.metric(
+            "Confidence",
+            f"{confidence:.2f}%"
+        )
+
+    else:
+
+        c2.metric(
+            "Confidence",
+            "N/A"
+        )
+
+    c3.metric(
+        "Fatalities",
+        f"{nkill:,}"
+    )
+
+    c4.metric(
+        "Injuries",
+        f"{nwound:,}"
+    )
+
+    # ========================================================
+    # CONFIDENCE
+    # ========================================================
+
+    if confidence is not None:
+
+        st.markdown(
+            "### Confidence Score"
+        )
+
+        st.progress(
+            min(
+                max(
+                    confidence / 100,
+                    0
+                ),
+                1
+            )
+        )
+
+        st.caption(
+            f"Model confidence: {confidence:.2f}%"
+        )
+
+    # ========================================================
+    # PROBABILITY DISTRIBUTION
+    # ========================================================
+
+    if probabilities:
+
+        st.markdown(
+            "### Threat Probability Distribution"
+        )
+
+        probability_df = pd.DataFrame(
+            {
+                "Threat Level":
+                    list(probabilities.keys()),
+
+                "Probability":
+                    list(probabilities.values())
+            }
+        )
+
+        st.dataframe(
+            probability_df.style.format(
+                {
+                    "Probability":
+                        "{:.2f}%"
+                }
+            ),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    # ========================================================
+    # INCIDENT SUMMARY
+    # ========================================================
+
+    st.markdown(
+        "### Incident Summary"
+    )
+
+    s1, s2, s3, s4 = st.columns(4)
+
+    s1.metric(
+        "Country",
+        country
+    )
+
+    s2.metric(
+        "Attack Type",
+        attack
+    )
+
+    s3.metric(
+        "Weapon Type",
+        weapon
+    )
+
+    s4.metric(
+        "Target Type",
+        target
+    )
+
+    # ========================================================
+    # CASUALTY SUMMARY
+    # ========================================================
+
+    st.markdown(
+        "### Impact Summary"
+    )
+
+    impact = nkill + nwound
+
+    i1, i2, i3 = st.columns(3)
+
+    i1.metric(
+        "Fatalities",
+        f"{nkill:,}"
+    )
+
+    i2.metric(
+        "Injuries",
+        f"{nwound:,}"
+    )
+
+    i3.metric(
+        "Total Impact",
+        f"{impact:,}"
+    )
+
+    # ========================================================
+    # AI ASSESSMENT
+    # ========================================================
+
+    st.markdown(
+        "### AI Assessment"
+    )
+
+    confidence_text = (
+        f"{confidence:.2f}%"
+        if confidence is not None
+        else "N/A"
+    )
+
+    st.markdown(
+        f"""
+        <div class="assessment-card">
+
+            <h3>Threat Classification</h3>
+
+            <p>
+                The locally trained model classified the
+                provided incident as
+                <strong>{threat_level}</strong> threat.
+            </p>
+
+            <p>
+                The estimated model confidence is
+                <strong>{confidence_text}</strong>.
+            </p>
+
+            <p>
+                The classification is based on the incident
+                characteristics and historical patterns
+                available in the uploaded dataset used during
+                model training.
+            </p>
+
+            <p>
+                This output is intended for analytical
+                decision support and should be interpreted
+                together with verified intelligence and
+                human assessment.
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ============================================================
+# MODEL REQUIREMENTS
+# ============================================================
+
+st.markdown("Model Requirements")
+
+st.caption(
+    """
+    The currently trained Threat Level model expects the
+    following standardized input features:
+    """
 )
 
-st.markdown("</div>", unsafe_allow_html=True)
+st.write(
+    THREAT_FEATURE_COLUMNS
+)
+
+if metadata:
+
+    threat_definition = metadata.get(
+        "threat_definition"
+    )
+
+    if threat_definition:
+
+        st.markdown(
+            "### Threat-Level Definition"
+        )
+
+        st.info(
+            """
+            **LOW:** Fatalities + Injuries ≤ 2
+
+            **MEDIUM:** Fatalities + Injuries between 3 and 10
+
+            **HIGH:** Fatalities + Injuries > 10
+            """
+        )

@@ -1,0 +1,81 @@
+{
+    "model": "RandomForestClassifier",
+    "model_type": "Threat Level Prediction",
+    "version": "3.0",
+    "accuracy": 0.9933129695368612,
+    "training_records": 145352,
+    "test_records": 36339,
+    "total_records": 181691,
+    "number_of_classes": 3,
+    "classes": [
+        "High",
+        "Low",
+        "Medium"
+    ],
+    "class_distribution": {
+        "Low": 140962,
+        "Medium": 27704,
+        "High": 13025
+    },
+    "features": [
+        "country_txt",
+        "region_txt",
+        "attacktype1_txt",
+        "weaptype1_txt",
+        "targtype1_txt",
+        "nkill",
+        "nwound"
+    ],
+    "categorical_features": [
+        "country_txt",
+        "region_txt",
+        "attacktype1_txt",
+        "weaptype1_txt",
+        "targtype1_txt"
+    ],
+    "numeric_features": [
+        "nkill",
+        "nwound"
+    ],
+    "target": "Threat_Level",
+    "threat_rules": {
+        "high": "nkill >= 10 OR total_casualties >= 20",
+        "medium": "total_casualties >= 5",
+        "low": "otherwise"
+    },
+    "classification_report": {
+        "High": {
+            "precision": 0.9949258391881343,
+            "recall": 0.9785028790786948,
+            "f1-score": 0.9866460228372363,
+            "support": 2605.0
+        },
+        "Low": {
+            "precision": 0.9943887634105025,
+            "recall": 0.9994324832405207,
+            "f1-score": 0.9969042438394452,
+            "support": 28193.0
+        },
+        "Medium": {
+            "precision": 0.9869509281382098,
+            "recall": 0.969139144558744,
+            "f1-score": 0.9779639409943544,
+            "support": 5541.0
+        },
+        "accuracy": 0.9933129695368612,
+        "macro avg": {
+            "precision": 0.9920885102456155,
+            "recall": 0.9823581689593198,
+            "f1-score": 0.9871714025570121,
+            "support": 36339.0
+        },
+        "weighted avg": {
+            "precision": 0.9932931371455244,
+            "recall": 0.9933129695368612,
+            "f1-score": 0.9932808396793031,
+            "support": 36339.0
+        }
+    },
+    "random_state": 42,
+    "n_estimators": 250
+}

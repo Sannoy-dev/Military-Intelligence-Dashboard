@@ -1,0 +1,16 @@
+{
+    "theme": "Dark (Recommended)",
+    "layout": "Wide",
+    "default_country": "",
+    "forecast_years": 5,
+    "minimum_confidence": 80,
+    "show_probability": true,
+    "show_ai_summary": true,
+    "animations": true,
+    "report_format": "PDF",
+    "include_charts": true,
+    "include_tables": true,
+    "include_recommendations": true,
+    "forecast_model": "Linear Regression",
+    "forecast_period": 5
+}

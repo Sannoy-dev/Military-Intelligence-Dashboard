@@ -1,0 +1,110 @@
+{
+    "model": "RandomForestClassifier",
+    "model_type": "Attack Prediction",
+    "version": "3.0",
+    "accuracy": 0.8392053435771006,
+    "training_records": 139532,
+    "test_records": 34883,
+    "total_records": 174415,
+    "number_of_classes": 8,
+    "classes": [
+        "Armed Assault",
+        "Assassination",
+        "Bombing/Explosion",
+        "Facility/Infrastructure Attack",
+        "Hijacking",
+        "Hostage Taking (Barricade Incident)",
+        "Hostage Taking (Kidnapping)",
+        "Unarmed Assault"
+    ],
+    "features": [
+        "country_txt",
+        "region_txt",
+        "weaptype1_txt",
+        "targtype1_txt",
+        "gname",
+        "success",
+        "suicide",
+        "nkill",
+        "nwound"
+    ],
+    "categorical_features": [
+        "country_txt",
+        "region_txt",
+        "weaptype1_txt",
+        "targtype1_txt",
+        "gname"
+    ],
+    "numeric_features": [
+        "success",
+        "suicide",
+        "nkill",
+        "nwound"
+    ],
+    "target": "attacktype1_txt",
+    "classification_report": {
+        "Armed Assault": {
+            "precision": 0.812111801242236,
+            "recall": 0.7354112959925005,
+            "f1-score": 0.7718607797318903,
+            "support": 8534.0
+        },
+        "Assassination": {
+            "precision": 0.6402946067949632,
+            "recall": 0.6978249611600207,
+            "f1-score": 0.6678230702515178,
+            "support": 3862.0
+        },
+        "Bombing/Explosion": {
+            "precision": 0.9572644721906924,
+            "recall": 0.9555832530734802,
+            "f1-score": 0.9564231238127641,
+            "support": 17651.0
+        },
+        "Facility/Infrastructure Attack": {
+            "precision": 0.7822362488728585,
+            "recall": 0.8377595364558185,
+            "f1-score": 0.809046397761716,
+            "support": 2071.0
+        },
+        "Hijacking": {
+            "precision": 0.1752988047808765,
+            "recall": 0.3333333333333333,
+            "f1-score": 0.2297650130548303,
+            "support": 132.0
+        },
+        "Hostage Taking (Barricade Incident)": {
+            "precision": 0.1784841075794621,
+            "recall": 0.3686868686868687,
+            "f1-score": 0.24052718286655683,
+            "support": 198.0
+        },
+        "Hostage Taking (Kidnapping)": {
+            "precision": 0.6506453048509123,
+            "recall": 0.6550179211469535,
+            "f1-score": 0.6528242911364144,
+            "support": 2232.0
+        },
+        "Unarmed Assault": {
+            "precision": 0.6069651741293532,
+            "recall": 0.6009852216748769,
+            "f1-score": 0.6039603960396039,
+            "support": 203.0
+        },
+        "accuracy": 0.8392053435771006,
+        "macro avg": {
+            "precision": 0.6004125650551693,
+            "recall": 0.6480752989404815,
+            "f1-score": 0.6165287818319117,
+            "support": 34883.0
+        },
+        "weighted avg": {
+            "precision": 0.8472321732535704,
+            "recall": 0.8392053435771006,
+            "f1-score": 0.8422788573766666,
+            "support": 34883.0
+        }
+    },
+    "random_state": 42,
+    "n_estimators": 250
+}

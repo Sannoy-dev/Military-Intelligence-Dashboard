@@ -5,294 +5,578 @@ from utils.data_loader import load_data
 from utils.ui import load_css
 
 # =====================================================
-# Page Configuration
+# PAGE CONFIGURATION
 # =====================================================
 
 st.set_page_config(
     page_title="Military Intelligence Dashboard",
-    page_icon="🛡️",
     layout="wide"
 )
 
 load_css()
 
 # =====================================================
-# Premium Header
+# HEADER
 # =====================================================
 
-st.markdown("""
-<div class="page-header">
+st.markdown(
+    """
+        <div>
+            <h1>Military Intelligence Dashboard</h1>
+            <p>
+              Analyze the currently active intelligence dataset
+                              using interactive analytics, machine learning,
+                              forecasting, and reporting tools.
+            </p>
+        </div>
+   
+    """,
+    unsafe_allow_html=True
+)
 
-<h1>🛡 AI Military Intelligence Dashboard</h1>
-
-<p>
-Welcome to the AI-powered Military Intelligence Dashboard.
-This platform analyzes historical terrorism incidents from the
-Global Terrorism Database (GTD) to provide interactive
-visualizations, predictive analytics, and intelligence-driven
-decision support.
-</p>
-
-</div>
-""", unsafe_allow_html=True)
-
-# =====================================================
-# Load Dataset
-# =====================================================
-
-with st.spinner("Loading intelligence database..."):
-    df = load_data()
 
 # =====================================================
-# Dashboard Statistics
+# LOAD ACTIVE DATASET
+# =====================================================
+
+try:
+
+    with st.spinner(
+        "Loading active intelligence dataset..."
+    ):
+
+        df = load_data()
+
+except Exception as error:
+
+    st.error(
+        f"Unable to load the active dataset: {error}"
+    )
+
+    st.stop()
+
+# =====================================================
+# DATASET AVAILABILITY
+# =====================================================
+
+if df is None or df.empty:
+
+    st.warning(
+        """
+        ### No Active Dataset
+
+        No processed dataset is currently available.
+
+        Upload a CSV dataset from the main dashboard and
+        complete the column-mapping process before using
+        the intelligence modules.
+        """
+    )
+
+    st.info(
+        """
+        **Workflow**
+
+        1. Upload your CSV dataset.
+        2. Map the dataset columns.
+        3. Process the dataset.
+        4. Train the available machine-learning models.
+        5. Return to this dashboard for analysis.
+        """
+    )
+
+    st.stop()
+
+# =====================================================
+# HELPER FUNCTIONS
+# =====================================================
+
+def numeric_sum(
+    dataframe,
+    column
+):
+
+    if column not in dataframe.columns:
+
+        return 0
+
+    return int(
+        dataframe[column]
+        .fillna(0)
+        .sum()
+    )
+
+
+def unique_count(
+    dataframe,
+    column
+):
+
+    if column not in dataframe.columns:
+
+        return 0
+
+    return int(
+        dataframe[column]
+        .dropna()
+        .nunique()
+    )
+
+
+def most_common(
+    dataframe,
+    column
+):
+
+    if column not in dataframe.columns:
+
+        return "N/A"
+
+    values = (
+        dataframe[column]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+
+    values = values[
+        values != ""
+    ]
+
+    if values.empty:
+
+        return "N/A"
+
+    return values.value_counts().idxmax()
+
+# =====================================================
+# DATASET STATISTICS
 # =====================================================
 
 total_incidents = len(df)
 
-fatalities = int(df["nkill"].fillna(0).sum())
+fatalities = numeric_sum(
+    df,
+    "nkill"
+)
 
-injuries = int(df["nwound"].fillna(0).sum())
+injuries = numeric_sum(
+    df,
+    "nwound"
+)
 
-countries = df["country_txt"].nunique()
+countries = unique_count(
+    df,
+    "country_txt"
+)
 
-attack_types = df["attacktype1_txt"].nunique()
+attack_types = unique_count(
+    df,
+    "attacktype1_txt"
+)
 
-groups = df["gname"].nunique()
+groups = unique_count(
+    df,
+    "gname"
+)
 
 # =====================================================
-# KPI Dashboard
+# DATASET OVERVIEW
 # =====================================================
 
-st.markdown("## 📊 Global Intelligence Overview")
+st.markdown(
+    "Active Dataset Overview"
+)
 
 c1, c2, c3 = st.columns(3)
 
 with c1:
+
     st.metric(
         "Total Incidents",
         f"{total_incidents:,}"
     )
 
 with c2:
+
     st.metric(
         "Fatalities",
         f"{fatalities:,}"
     )
 
 with c3:
+
     st.metric(
         "Injuries",
         f"{injuries:,}"
     )
 
+
 c4, c5, c6 = st.columns(3)
 
 with c4:
+
     st.metric(
         "Countries",
         countries
     )
 
 with c5:
+
     st.metric(
         "Attack Types",
         attack_types
     )
 
 with c6:
+
     st.metric(
         "Organizations",
         groups
     )
 
 # =====================================================
-# AI Intelligence Summary
-# =====================================================
-
-top_country = df["country_txt"].value_counts().idxmax()
-
-top_attack = df["attacktype1_txt"].value_counts().idxmax()
-
-top_group = df["gname"].value_counts().idxmax()
-
-top_weapon = df["weaptype1_txt"].value_counts().idxmax()
-
-st.markdown("## 🧠 AI Executive Summary")
-
-st.markdown(f"""
-<div class="report-card">
-
-<h3>📄 Global Intelligence Assessment</h3>
-
-<b>Total Recorded Incidents:</b> {total_incidents:,}<br><br>
-
-<b>Countries Monitored:</b> {countries}<br><br>
-
-<b>Total Fatalities:</b> {fatalities:,}<br><br>
-
-<b>Total Injuries:</b> {injuries:,}<br><br>
-
-<b>Highest Activity Country:</b> {top_country}<br><br>
-
-<b>Most Common Attack Type:</b> {top_attack}<br><br>
-
-<b>Most Frequently Used Weapon:</b> {top_weapon}<br><br>
-
-<b>Most Active Organization:</b> {top_group}<br><br>
-
-<b>Assessment:</b><br>
-
-Historical GTD intelligence indicates persistent terrorist
-activity across multiple regions. The dashboard provides
-decision-support capabilities through trend analysis,
-interactive mapping, machine learning predictions,
-forecasting, and intelligence reporting.
-
-</div>
-""", unsafe_allow_html=True)
-
-# =====================================================
-# Attack Trend
-# =====================================================
-
-st.markdown("## 📈 Terrorism Trend Over Time")
-
-with st.spinner("Generating historical trend..."):
-
-    yearly = (
-        df.groupby("iyear")
-        .size()
-        .reset_index(name="Attacks")
-    )
-
-    fig = px.line(
-        yearly,
-        x="iyear",
-        y="Attacks",
-        markers=True,
-        title="Historical Terrorism Activity"
-    )
-
-    fig.update_layout(
-
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        plot_bgcolor="rgba(0,0,0,0)",
-
-        font_color="white",
-
-        height=500,
-
-        margin=dict(
-            l=20,
-            r=20,
-            t=60,
-            b=20
-        )
-    )
-
-    st.markdown(
-        '<div class="chart-card">',
-        unsafe_allow_html=True
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True
-    )
-
-# =====================================================
-# Top 10 Countries
-# =====================================================
-
-st.markdown("## 🌍 Top 10 Most Affected Countries")
-
-country_chart = (
-    df["country_txt"]
-    .value_counts()
-    .head(10)
-    .reset_index()
-)
-
-country_chart.columns = [
-    "Country",
-    "Incidents"
-]
-
-fig = px.bar(
-    country_chart,
-    x="Country",
-    y="Incidents",
-    color="Incidents",
-    color_continuous_scale="Reds"
-)
-
-fig.update_layout(
-
-    paper_bgcolor="rgba(0,0,0,0)",
-
-    plot_bgcolor="rgba(0,0,0,0)",
-
-    font_color="white",
-
-    height=500
-)
-
-st.markdown(
-    '<div class="chart-card">',
-    unsafe_allow_html=True
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-st.markdown(
-    "</div>",
-    unsafe_allow_html=True
-)
-
-# =====================================================
-# Quick Navigation
-# =====================================================
-
-st.markdown("## 🚀 Intelligence Modules")
-
-st.info("""
-### Available Modules
-
-🗺 **Global Threat Map**
-- Explore incidents geographically.
-
-🌎 **Country Analysis**
-- Analyze terrorism trends for individual countries.
-
-🤖 **Attack Prediction**
-- Predict attack types using machine learning.
-
-🚨 **Threat Level Prediction**
-- Estimate threat severity from incident information.
-
-📈 **Forecasting**
-- Forecast future terrorism trends.
-
-🧠 **AI Intelligence Report**
-- Generate executive intelligence summaries.
-
-📊 **Data Explorer**
-- Search, filter, visualize, and export GTD data.
-""")
-
-# =====================================================
-# Footer
+# DATASET STATUS
 # =====================================================
 
 st.caption(
-    "AI Military Intelligence Dashboard • Powered by the Global Terrorism Database (GTD)"
+    f"Active dataset contains {len(df):,} records "
+    f"and {len(df.columns):,} columns."
+)
+
+# =====================================================
+# AI EXECUTIVE SUMMARY
+# =====================================================
+
+st.markdown(
+    "Intelligence Summary"
+)
+
+top_country = most_common(
+    df,
+    "country_txt"
+)
+
+top_attack = most_common(
+    df,
+    "attacktype1_txt"
+)
+
+top_group = most_common(
+    df,
+    "gname"
+)
+
+top_weapon = most_common(
+    df,
+    "weaptype1_txt"
+)
+
+st.markdown(
+    f"""
+    <div class="assessment-card">
+
+    <h3>Dataset Assessment</h3>
+
+    <p>
+            <strong>Total Recorded Incidents:</strong>
+            {total_incidents:,}
+        </p>
+
+    <p>
+            <strong>Countries Represented:</strong>
+            {countries:,}
+        </p>
+
+    <p>
+            <strong>Total Fatalities:</strong>
+            {fatalities:,}
+        </p>
+
+    <p>
+            <strong>Total Injuries:</strong>
+            {injuries:,}
+    </p>
+
+    <p>
+            <strong>Highest Activity Country:</strong>
+            {top_country}
+        </p>
+
+    <p>
+            <strong>Most Common Attack Type:</strong>
+            {top_attack}
+        </p>
+
+    <p>
+            <strong>Most Frequently Used Weapon:</strong>
+            {top_weapon}
+        </p>
+
+    <p>
+            <strong>Most Active Organization:</strong>
+            {top_group}
+        </p>
+
+    <p>
+            The dashboard generates analytical summaries from
+            the currently active uploaded dataset. Results depend
+            on the fields available in the processed dataset.
+        </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# =====================================================
+# ATTACK TREND
+# =====================================================
+
+if "iyear" in df.columns:
+
+    st.markdown(
+        "Incident Trend Over Time"
+    )
+
+    try:
+
+        trend_df = df.copy()
+
+        trend_df["iyear"] = (
+            trend_df["iyear"]
+            .astype(str)
+            .str.extract(
+                r"(\d{4})"
+            )[0]
+        )
+
+        trend_df["iyear"] = (
+            trend_df["iyear"]
+            .astype(float)
+        )
+
+        trend_df = (
+            trend_df
+            .dropna(
+                subset=["iyear"]
+            )
+            .groupby("iyear")
+            .size()
+            .reset_index(
+                name="Incidents"
+            )
+        )
+
+        if not trend_df.empty:
+
+            trend_df["iyear"] = (
+                trend_df["iyear"]
+                .astype(int)
+            )
+
+            fig = px.line(
+                trend_df,
+                x="iyear",
+                y="Incidents",
+                markers=True,
+                title="Historical Incident Activity"
+            )
+
+            fig.update_layout(
+
+                paper_bgcolor="rgba(0,0,0,0)",
+
+                plot_bgcolor="rgba(0,0,0,0)",
+
+                font_color="white",
+
+                height=500,
+
+                margin=dict(
+                    l=20,
+                    r=20,
+                    t=60,
+                    b=20
+                )
+            )
+
+            st.markdown(
+                '<div class="chart-card">',
+                unsafe_allow_html=True
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+            st.markdown(
+                "</div>",
+                unsafe_allow_html=True
+            )
+
+        else:
+
+            st.info(
+                "No valid year information is available "
+                "for trend analysis."
+            )
+
+    except Exception as error:
+
+        st.warning(
+            f"Unable to generate the historical trend: {error}"
+        )
+
+else:
+
+    st.info(
+        """
+        Historical trend analysis is unavailable because
+        the active dataset does not contain an `iyear` field.
+        """
+    )
+
+# =====================================================
+# TOP COUNTRIES
+# =====================================================
+
+if "country_txt" in df.columns:
+
+    st.markdown(
+        "Top 10 Countries by Incidents"
+    )
+
+    country_chart = (
+        df["country_txt"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .value_counts()
+        .head(10)
+        .reset_index()
+    )
+
+    country_chart.columns = [
+        "Country",
+        "Incidents"
+    ]
+
+    if not country_chart.empty:
+
+        fig = px.bar(
+            country_chart,
+            x="Country",
+            y="Incidents",
+            color="Incidents",
+            color_continuous_scale="Reds"
+        )
+
+        fig.update_layout(
+
+            paper_bgcolor="rgba(0,0,0,0)",
+
+            plot_bgcolor="rgba(0,0,0,0)",
+
+            font_color="white",
+
+            height=500,
+
+            margin=dict(
+                l=20,
+                r=20,
+                t=40,
+                b=20
+            )
+        )
+
+        st.markdown(
+            '<div class="chart-card">',
+            unsafe_allow_html=True
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
+
+# =====================================================
+# DATASET SCHEMA
+# =====================================================
+
+st.markdown(
+    "Active Dataset Schema"
+)
+
+with st.expander(
+    "View available columns"
+):
+
+    columns = list(
+        df.columns
+    )
+
+    st.write(
+        columns
+    )
+
+# =====================================================
+# QUICK NAVIGATION
+# =====================================================
+
+st.markdown(
+    "Intelligence Modules"
+)
+
+st.info(
+    """
+    ### Available Modules
+
+    🗺 **Global Threat Map**
+
+    Explore incidents geographically when valid
+    latitude and longitude fields are available.
+
+    **Country Analysis**
+
+    Analyze activity and trends for individual
+    countries when country information is available.
+
+    **Attack Prediction**
+
+    Predict attack types using the locally trained
+    machine-learning model.
+
+    **Threat Level Prediction**
+
+    Estimate threat severity using the locally
+    trained threat-level model.
+
+    **Forecasting**
+
+    Analyze historical patterns and generate forecasts.
+
+    **AI Intelligence Report**
+
+    Generate analytical summaries from the active dataset.
+
+    **Data Explorer**
+
+    Search, filter, analyze, and export the active dataset.
+    """
+)
+
+# =====================================================
+# FOOTER
+# =====================================================
+
+st.caption(
+    "AI Military Intelligence Dashboard • "
+    "Powered by the active user-uploaded dataset"
 )
